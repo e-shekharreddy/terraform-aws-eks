@@ -8,23 +8,22 @@ Node groups are fully configurable via a map — you can run blue and green node
 
 ## What gets created
 
-```
-VPC (you bring this)
-└── Private Subnets
-    ├── EKS Control Plane  (private endpoint, no public access)
-    ├── Node Groups        (one per entry in eks_managed_node_groups)
-    │   └── Launch Template per node group
-    │       ├── gp3 root volume
-    │       ├── IMDSv2 with hop limit 2 (pods can call AWS APIs)
-    │       └── your security groups attached
-    ├── OIDC Provider      (needed for pods to assume IAM roles)
-    └── Add-ons
-        ├── vpc-cni              installed before nodes
-        ├── eks-pod-identity-agent  installed before nodes
-        ├── coredns
-        ├── kube-proxy
-        └── metrics-server
-```
+| Resource | Name | Notes |
+|---|---|---|
+| `aws_eks_cluster` | `{project}-{environment}` | Private endpoint only |
+| `aws_eks_node_group` | `{project}-{environment}-{blue\|green}` | One per active entry in `eks_managed_node_groups` |
+| `aws_launch_template` | `{project}-{environment}-{blue\|green}-lt` | gp3 disk, IMDSv2 hop limit 2, custom SGs |
+| `aws_iam_role` | `{project}-{environment}-eks-cluster` | Assumed by EKS control plane |
+| `aws_iam_role` | `{project}-{environment}-eks-node` | Assumed by all node groups |
+| `aws_iam_role_policy_attachment` | — | `AmazonEKSClusterPolicy` on cluster role |
+| `aws_iam_role_policy_attachment` | — | `AmazonEKSWorkerNodePolicy`, `AmazonEKS_CNI_Policy`, `AmazonEC2ContainerRegistryReadOnly` on node role |
+| `aws_iam_role_policy_attachment` | — | Any extra policies from `iam_role_additional_policies` (e.g. EBS, EFS) |
+| `aws_iam_openid_connect_provider` | `{project}-{environment}-oidc` | Enables IRSA — pods assuming IAM roles |
+| `aws_eks_addon` | `vpc-cni` | Installed before nodes |
+| `aws_eks_addon` | `eks-pod-identity-agent` | Installed before nodes |
+| `aws_eks_addon` | `coredns` | Installed after nodes |
+| `aws_eks_addon` | `kube-proxy` | Installed after nodes |
+| `aws_eks_addon` | `metrics-server` | Installed after nodes |
 
 ---
 
